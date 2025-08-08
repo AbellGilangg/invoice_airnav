@@ -67,6 +67,8 @@
                                     <span class="font-medium text-gray-500">Subtotal:</span>
                                     <span>{{ number_format($invoice->details->sum('base_charge'), 2) }} {{ $invoice->currency }}</span>
                                 </div>
+                                
+                                {{-- Bagian PPN dan PPh untuk Domestik --}}
                                 @if($invoice->currency == 'IDR')
                                 <div class="flex justify-between">
                                     <span class="font-medium text-gray-500">PPN (11%):</span>
@@ -77,19 +79,24 @@
                                     <span>- {{ number_format($invoice->pph_charge, 2) }} IDR</span>
                                 </div>
                                 @endif
+                                
                                 <hr class="my-2 border-gray-200 dark:border-gray-700">
+                                
+                                {{-- PERBAIKAN DI SINI --}}
+                                {{-- Total Tagihan Pertama (USD atau IDR) --}}
                                 <div class="flex justify-between font-bold text-lg">
-                                    <span>Total Tagihan:</span>
+                                    <span>Total Tagihan ({{ $invoice->currency }}):</span>
                                     <span>{{ number_format($invoice->total_charge, 2) }} {{ $invoice->currency }}</span>
                                 </div>
                                 
-                                {{-- TAMBAHAN UNTUK MENAMPILKAN TOTAL IDR --}}
-                                @if($invoice->flight_type == 'Internasional' && $invoice->total_charge_in_idr)
-                                <div class="flex justify-between font-bold text-lg text-gray-600 dark:text-gray-400">
-                                    <span>Setara Dengan:</span>
-                                    <span>Rp {{ number_format($invoice->total_charge_in_idr, 2) }}</span>
+                                {{-- BARIS TAMBAHAN: Hanya muncul untuk Internasional --}}
+                                @if($invoice->flight_type == 'Internasional' && $invoice->total_charge_in_idr > 0)
+                                <div class="flex justify-between font-bold text-lg text-gray-800 dark:text-gray-200">
+                                    <span>Total Tagihan (IDR):</span>
+                                    <span>Rp {{ number_format($invoice->total_charge_in_idr, 2, ',', '.') }}</span>
                                 </div>
                                 @endif
+                                {{-- AKHIR PERBAIKAN --}}
                             </div>
                         </div>
                     </div>

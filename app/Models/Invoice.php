@@ -9,32 +9,32 @@ class Invoice extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
-        'airport_id', // Baru
+        'airport_id',
         'airline',
-        'ground_handling', // Baru
+        'ground_handling',
         'flight_number',
-        'flight_number_2', // Baru
+        'flight_number_2',
         'registration',
         'aircraft_type',
-        'movement_type', // Baru
-        'departure_airport', // Kolom Baru
+        'departure_airport',
         'arrival_airport',
         'service_type',
         'flight_type',
-        'charge_type',
-        'actual_time',
         'operational_hour_start',
         'operational_hour_end',
-        'duration_minutes',
-        'billed_hours',
-        'base_rate',
-        'base_charge',
         'ppn_charge',
         'pph_charge',
         'apply_pph',
         'total_charge',
+        'total_charge_in_idr', // <-- PERBAIKAN: Ditambahkan
         'currency',
+        'usd_exchange_rate',   // <-- PERBAIKAN: Ditambahkan
         'status',
     ];
 
@@ -45,6 +45,10 @@ class Invoice extends Model
     {
         return $this->belongsTo(Airport::class);
     }
+
+    /**
+     * Mendefinisikan relasi bahwa Invoice memiliki banyak Detail.
+     */
     public function details()
     {
         return $this->hasMany(InvoiceDetail::class);

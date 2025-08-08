@@ -82,6 +82,9 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/invoices', [InvoiceController::class, 'store'])->name('invoices.store');
 
+    Route::get('/invoices/{invoice}/edit', [InvoiceController::class, 'edit'])->name('invoices.edit');
+    Route::patch('/invoices/{invoice}', [InvoiceController::class, 'update'])->name('invoices.update');
+    
     // Rute dinamis (dengan parameter) diletakkan setelahnya
     Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
     Route::get('/invoices/{invoice}/download', [InvoiceController::class, 'downloadPDF'])->name('invoices.download');

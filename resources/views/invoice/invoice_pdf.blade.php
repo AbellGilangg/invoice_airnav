@@ -89,7 +89,6 @@
         $bankLogoSrc = file_exists($bankLogoPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($bankLogoPath)) : '';
     @endphp
 
-    <!-- BAGIAN HEADER -->
     <table class="header-table">
         <tr>
             <td style="width: 15%; text-align: left;">
@@ -117,7 +116,6 @@
         </tr>
     </table>
 
-    <!-- BAGIAN INFORMASI UTAMA -->
     <table class="main-info-table">
         <tr><td class="label-col">AIRLINE/Airline</td><td>: {{ $invoice->airline }}</td></tr>
         <tr><td class="label-col">GROUND HANDLING</td><td>: {{ $invoice->ground_handling ?? $invoice->airline }}</td></tr>
@@ -130,7 +128,6 @@
         <tr><td class="label-col">DIBAYAR OLEH/Fee Will Be Paid By</td><td>: {{ $invoice->airline }}</td></tr>
     </table>
 
-    <!-- BAGIAN TABEL BIAYA (DENGAN LOOPING) -->
     <table class="charges-table">
         <thead>
             <tr>
@@ -165,7 +162,6 @@
         </tbody>
     </table>
 
-    <!-- BAGIAN TOTAL BAWAH -->
     <div class="total-section">
         <table>
              <tr>
@@ -185,15 +181,26 @@
                 <td class="text-right">- {{ number_format($invoice->pph_charge, 2, ',', '.') }}</td>
             </tr>
             @endif
+            
+            {{-- Total Tagihan Pertama (USD atau IDR) --}}
             <tr>
-                <td class="text-right text-strong" colspan="6">TOTAL</td>
+                <td class="text-right text-strong" colspan="6">TOTAL ({{ $invoice->currency }})</td>
                 <td class="text-right text-strong">{{ $invoice->currency }}</td>
                 <td class="text-right text-strong">{{ number_format($invoice->total_charge, 2, ',', '.') }}</td>
             </tr>
+
+            {{-- BARIS TAMBAHAN: Hanya muncul untuk Internasional --}}
+            @if($invoice->flight_type == 'Internasional' && $invoice->total_charge_in_idr > 0)
+            <tr>
+                <td class="text-right text-strong" colspan="6">TOTAL (IDR)</td>
+                <td class="text-right text-strong">IDR</td>
+                <td class="text-right text-strong">{{ number_format($invoice->total_charge_in_idr, 2, ',', '.') }}</td>
+            </tr>
+            @endif
+            {{-- AKHIR BARIS TAMBAHAN --}}
         </table>
     </div>
 
-    <!-- BAGIAN FOOTER -->
     <div class="note-section">
         Note : Berdasarkan PMK No. 131 Tahun 2024 menggunakan DPP Lain-Lain (11/12 x harga jual / penggantian)x 12%
     </div>

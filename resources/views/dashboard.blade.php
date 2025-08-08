@@ -5,22 +5,19 @@
         </h2>
     </x-slot>
 
-    <div class="py-12">
+     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    {{-- Menampilkan pesan sukses setelah update status --}}
-                    @if (session('success'))
-                        <div class="mb-4 p-4 bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-200 rounded-lg">
-                            {{ session('success') }}
-                        </div>
-                    @endif
-
                     <div class="flex justify-between items-center">
                         <p>{{ __("Selamat Datang") }}</p>
-                        <a href="{{ route('invoices.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        
+                        {{-- Tombol ini hanya muncul untuk Master dan Admin --}}
+                        @can('create-invoice')
+                        <a href="{{ route('invoices.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 ...">
                             Buat Invoice Baru
                         </a>
+                        @endcan
                     </div>
                 </div>
             </div>
@@ -106,19 +103,20 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                                             <div class="flex items-center gap-4">
                                                 <a href="{{ route('invoices.show', $invoice->id) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900">Detail</a>
-
-                                                {{-- Cek apakah role user adalah 'admin' --}}
-                                                @if (Auth::user()->role == 'admin')
-                                                    {{-- Jika admin, tampilkan form dengan dropdown --}}
+                                                
+                                                {{-- Tombol Edit & Dropdown Status hanya muncul jika user berhak --}}
+                                                @can('update-invoice', $invoice)
+                                                    <a href="{{ route('invoices.edit', $invoice->id) }}" class="text-green-600 dark:text-green-400 hover:text-green-900">Edit</a>
+                                                    
                                                     <form action="{{ route('invoices.updateStatus', $invoice->id) }}" method="POST">
                                                         @csrf
                                                         @method('PATCH')
-                                                        <select name="status" onchange="this.form.submit()" class="text-xs rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                                        <select name="status" onchange="this.form.submit()" class="text-xs rounded-md ...">
                                                             <option value="Belum Lunas" {{ $invoice->status == 'Belum Lunas' ? 'selected' : '' }}>Belum Lunas</option>
                                                             <option value="Lunas" {{ $invoice->status == 'Lunas' ? 'selected' : '' }}>Lunas</option>
                                                         </select>
                                                     </form>
-                                                @endif
+                                                @endcan
                                             </div>
                                         </td>
                                     </tr>
