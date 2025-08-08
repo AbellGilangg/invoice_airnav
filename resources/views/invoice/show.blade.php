@@ -80,8 +80,16 @@
                                 <hr class="my-2 border-gray-200 dark:border-gray-700">
                                 <div class="flex justify-between font-bold text-lg">
                                     <span>Total Tagihan:</span>
-                                    <span>{{ number_format($invoice->total_charge, 2) }} {{ $invoice->currency == 'USD' ? 'USD' : 'IDR' }}</span>
+                                    <span>{{ number_format($invoice->total_charge, 2) }} {{ $invoice->currency }}</span>
                                 </div>
+                                
+                                {{-- TAMBAHAN UNTUK MENAMPILKAN TOTAL IDR --}}
+                                @if($invoice->flight_type == 'Internasional' && $invoice->total_charge_in_idr)
+                                <div class="flex justify-between font-bold text-lg text-gray-600 dark:text-gray-400">
+                                    <span>Setara Dengan:</span>
+                                    <span>Rp {{ number_format($invoice->total_charge_in_idr, 2) }}</span>
+                                </div>
+                                @endif
                             </div>
                         </div>
                     </div>
