@@ -125,24 +125,6 @@ class InvoiceController extends Controller
         return redirect()->route('invoices.show', $invoice);
     }
 
-     public function update(Request $request, Invoice $invoice)
-    {
-        // Otorisasi: hanya user yang berhak bisa mengupdate
-        $this->authorize('update-invoice', $invoice);
-
-        // Validasi data (sesuaikan dengan field yang boleh di-edit)
-        $validated = $request->validate([
-            'airline' => 'required|string|max:255',
-            'flight_number' => 'required|string|max:255',
-            'registration' => 'required|string|max:255',
-            // Tambahkan validasi lain jika diperlukan
-        ]);
-
-        $invoice->update($validated);
-
-        return redirect()->route('dashboard')->with('success', 'Invoice berhasil diperbarui.');
-    }
-
     private function calculateDuration(\DateTime $actual_time, Airport $airport, string $charge_type): int
     {
         $duration_minutes = 0;
@@ -179,6 +161,8 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice)
     {
+        $this->authorize('view-invoice', $invoice);
+
         $invoice->load('details', 'airport');
         return view('invoice.show', ['invoice' => $invoice]);
     }
@@ -210,17 +194,6 @@ class InvoiceController extends Controller
         return redirect()->route('dashboard')->with('success', 'Invoice berhasil diperbarui.');
     }
     
-     public function updateStatus(Request $request, Invoice $invoice)
-    {
-        // Lindungi dengan Gate
-        $this->authorize('update-invoice', $invoice);
-
-        $request->validate(['status' => 'required|in:Lunas,Belum Lunas']);
-        $invoice->status = $request->status;
-        $invoice->save();
-        return back()->with('success', 'Status invoice berhasil diperbarui.');
-    }
-
     public function downloadPDF(Invoice $invoice)
     {
         $invoice->load('details', 'airport');

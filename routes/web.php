@@ -84,7 +84,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/invoices/{invoice}/edit', [InvoiceController::class, 'edit'])->name('invoices.edit');
     Route::patch('/invoices/{invoice}', [InvoiceController::class, 'update'])->name('invoices.update');
-    
+
     // Rute dinamis (dengan parameter) diletakkan setelahnya
     Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
     Route::get('/invoices/{invoice}/download', [InvoiceController::class, 'downloadPDF'])->name('invoices.download');
@@ -95,6 +95,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/airports', [AirportController::class, 'store'])->name('airports.store');
     Route::get('/airports/{airport}/edit', [AirportController::class, 'edit'])->name('airports.edit');
     Route::patch('/airports/{airport}', [AirportController::class, 'update'])->name('airports.update');
+
+    Route::middleware('can:is-master')->group(function () {
+    Route::get('/users', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index');
+    Route::get('/users/{user}/edit', [\App\Http\Controllers\UserController::class, 'edit'])->name('users.edit');
+    Route::patch('/users/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('users.update');
+    });
 });
 
 require __DIR__.'/auth.php';

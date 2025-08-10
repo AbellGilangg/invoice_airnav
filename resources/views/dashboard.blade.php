@@ -12,12 +12,11 @@
                     <div class="flex justify-between items-center">
                         <p>{{ __("Selamat Datang") }}</p>
                         
-                        {{-- Tombol ini hanya muncul untuk Master dan Admin --}}
-                        @can('create-invoice')
-                        <a href="{{ route('invoices.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 ...">
-                            Buat Invoice Baru
-                        </a>
-                        @endcan
+                         @if(in_array(auth()->user()->role, ['master', 'admin']))
+                            <a href="{{ route('invoices.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                Buat Invoice Baru
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>

@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use App\Models\User;
-use App\Models\Invoice; // <-- TAMBAHKAN IMPORT
+use App\Models\Invoice; // <-- Pastikan ini di-import
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
@@ -40,6 +40,7 @@ class AuthServiceProvider extends ServiceProvider
         
         // Gate untuk membuat invoice (hanya Master dan Admin)
         Gate::define('create-invoice', function (User $user) {
+            // INI BAGIAN PENTINGNYA
             return in_array($user->role, ['master', 'admin']);
         });
 
@@ -58,6 +59,9 @@ class AuthServiceProvider extends ServiceProvider
         // Gate untuk mengelola user lain (hanya Master)
         Gate::define('manage-users', function (User $user) {
             return $user->role === 'master';
+        });
+        Gate::define('view-invoice', function (User $user, Invoice $invoice) {
+            return true; // Izinkan semua user yang sudah login untuk melihat detail
         });
     }
 }
