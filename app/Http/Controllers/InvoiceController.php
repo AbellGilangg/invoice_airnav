@@ -9,6 +9,7 @@ use App\Models\InvoiceDetail;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth; // <-- Import Auth
 
 class InvoiceController extends Controller
 {
@@ -19,13 +20,18 @@ class InvoiceController extends Controller
 
     public function create()
     {
+        $this->authorize('create-invoice');
+
         $airports = Airport::all();
         return view('invoice.create', ['airports' => $airports]);
     }
 
     public function store(Request $request)
     {
+        // Otorisasi ini sudah benar, akan memeriksa apakah user boleh MENYIMPAN data.
         $this->authorize('create-invoice');
+
+        // --- PERBAIKAN 2: VALIDASI DIPERKUAT ---
         $validated = $request->validate([
             'airport_id' => 'required|exists:airports,id',
             'airline' => 'required|string|max:255',
@@ -34,23 +40,32 @@ class InvoiceController extends Controller
             'flight_number_2' => 'nullable|string|max:255',
             'registration' => 'required|string|max:255',
             'aircraft_type' => 'required|string|max:255',
-            'other_airport' => 'required|string|max:255', // Rute
+            'other_airport' => 'required|string|max:255',
             
+            // Pastikan 'movements' adalah array dan minimal ada 1 pilihan.
             'movements' => 'required|array|min:1',
             'movements.*' => 'in:Arrival,Departure',
-            'arrival_time' => [Rule::requiredIf(in_array('Arrival', $request->input('movements', []))), 'nullable', 'date_format:Y-m-d\TH:i'],
-            'departure_time' => [Rule::requiredIf(in_array('Departure', $request->input('movements', []))), 'nullable', 'date_format:Y-m-d\TH:i'],
+            
+            // Waktu arrival wajib diisi JIKA 'Arrival' ada di dalam array 'movements'
+            'arrival_time' => ['required_if:movements.*,Arrival', 'nullable', 'date_format:Y-m-d\TH:i'],
+            
+            // Waktu departure wajib diisi JIKA 'Departure' ada di dalam array 'movements'
+            'departure_time' => ['required_if:movements.*,Departure', 'nullable', 'date_format:Y-m-d\TH:i'],
 
             'flight_type' => 'required|in:Domestik,Internasional',
             'usd_exchange_rate' => 'required_if:flight_type,Internasional|nullable|numeric|min:1',
             'service_type' => 'required|in:APP,TWR,AFIS',
             'charge_type' => 'required|in:Advance,Extend',
             'apply_pph' => 'nullable|boolean',
+        ], [
+            // Pesan error kustom agar lebih jelas
+            'movements.required' => 'Anda harus memilih minimal satu pergerakan (Arrival atau Departure).',
+            'arrival_time.required_if' => 'Waktu Arrival wajib diisi jika Anda memilih pergerakan Arrival.',
+            'departure_time.required_if' => 'Waktu Departure wajib diisi jika Anda memilih pergerakan Departure.',
         ]);
 
         $airport = Airport::find($validated['airport_id']);
 
-        // 1. Buat Invoice Induk
         $invoice = Invoice::create([
             'airport_id' => $validated['airport_id'],
             'airline' => $validated['airline'],
@@ -70,13 +85,11 @@ class InvoiceController extends Controller
             'ppn_charge' => 0,
             'pph_charge' => 0,
             'total_charge' => 0,
-            // 'total_charge_in_idr' => null, // <-- PERBAIKAN: Baris ini dihapus
             'apply_pph' => $request->has('apply_pph'),
         ]);
 
         $totalBaseCharge = 0;
 
-        // 2. Loop setiap pergerakan untuk membuat InvoiceDetail
         foreach ($validated['movements'] as $movement) {
             $actual_time_str = ($movement == 'Arrival') ? $validated['arrival_time'] : $validated['departure_time'];
             $actual_time_obj = new \DateTime($actual_time_str);
@@ -103,7 +116,6 @@ class InvoiceController extends Controller
             $totalBaseCharge += $base_charge;
         }
 
-        // 3. Hitung total akhir dan update invoice induk
         $totalPpn = 0;
         $totalPph = 0;
 
@@ -113,9 +125,11 @@ class InvoiceController extends Controller
                 $totalPph = $totalBaseCharge * 0.02;
             }
             $invoice->total_charge = $totalBaseCharge + $totalPpn - $totalPph;
-        } else { // Internasional
+        } else {
             $invoice->total_charge = $totalBaseCharge;
-            $invoice->total_charge_in_idr = $totalBaseCharge * $invoice->usd_exchange_rate;
+            if (!empty($invoice->usd_exchange_rate)) {
+                $invoice->total_charge_in_idr = $totalBaseCharge * $invoice->usd_exchange_rate;
+            }
         }
         
         $invoice->ppn_charge = $totalPpn;
@@ -150,7 +164,7 @@ class InvoiceController extends Controller
         
         if ($flight_type == 'Domestik') {
             $base_rate = $rates_rupiah[$service_type];
-        } else { // Internasional
+        } else {
             $base_rate = $rates_usd[$service_type];
         }
         
@@ -169,24 +183,20 @@ class InvoiceController extends Controller
 
     public function edit(Invoice $invoice)
     {
-        // Otorisasi: hanya user yang berhak bisa mengakses halaman edit
         $this->authorize('update-invoice', $invoice);
 
         $airports = Airport::all();
         return view('invoice.edit', compact('invoice', 'airports'));
     }
 
-     public function update(Request $request, Invoice $invoice)
+    public function update(Request $request, Invoice $invoice)
     {
-        // Otorisasi: hanya user yang berhak bisa mengupdate
         $this->authorize('update-invoice', $invoice);
 
-        // Validasi data (sesuaikan dengan field yang boleh di-edit)
         $validated = $request->validate([
             'airline' => 'required|string|max:255',
             'flight_number' => 'required|string|max:255',
             'registration' => 'required|string|max:255',
-            // Tambahkan validasi lain jika diperlukan
         ]);
 
         $invoice->update($validated);
@@ -196,6 +206,7 @@ class InvoiceController extends Controller
     
     public function downloadPDF(Invoice $invoice)
     {
+        $this->authorize('view-invoice', $invoice);
         $invoice->load('details', 'airport');
         $data = ['invoice' => $invoice];
         $pdf = PDF::loadView('invoice.invoice_pdf', $data);
@@ -205,6 +216,9 @@ class InvoiceController extends Controller
 
     public function updateStatus(Request $request, Invoice $invoice)
     {
+        // --- PERBAIKAN 3: TAMBAHKAN OTORISASI DI SINI JUGA ---
+        $this->authorize('update-invoice', $invoice);
+
         $request->validate(['status' => 'required|in:Lunas,Belum Lunas']);
         $invoice->status = $request->status;
         $invoice->save();

@@ -8,6 +8,8 @@ use App\Models\Invoice;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AirportController;
 use App\Models\Airport;
+use App\Http\Controllers\UserController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -41,9 +43,17 @@ Route::get('/dashboard', function (Request $request) {
     
     $airports = Airport::orderBy('iata_code')->get();
 
+    $user = auth()->user();
+    
+    $invoicesQuery = Invoice::query()->with(['airport', 'details']);
+
+    // Logika pembatasan data berdasarkan role
+    if ($user->role === 'admin' || $user->role === 'user') {
+        $invoicesQuery->where('airport_id', $user->airport_id);
+    }
+    
     // Buat query dasar, lalu terapkan filter jika ada
-    $invoices = Invoice::query()
-        ->with(['airport', 'details']) // Eager load relasi
+    $invoices = $invoicesQuery
         ->when($selectedYear, function ($query, $year) {
             // Filter berdasarkan tahun dari 'created_at'
             return $query->whereRaw("strftime('%Y', created_at) = ?", [$year]);
@@ -52,7 +62,7 @@ Route::get('/dashboard', function (Request $request) {
             // Filter berdasarkan bulan dari 'created_at'
             return $query->whereRaw("strftime('%m', created_at) = ?", [str_pad($month, 2, '0', STR_PAD_LEFT)]);
         })
-        ->when($selectedAirport, function ($query, $airportId) { // Terapkan filter bandara
+        ->when($selectedAirport && $user->role === 'master', function ($query, $airportId) { // Terapkan filter bandara
             return $query->where('airport_id', $airportId);
         })
         // Mengurutkan berdasarkan tanggal pembuatan invoice
@@ -89,17 +99,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
     Route::get('/invoices/{invoice}/download', [InvoiceController::class, 'downloadPDF'])->name('invoices.download');
     Route::patch('/invoices/{invoice}/status', [InvoiceController::class, 'updateStatus'])->name('invoices.updateStatus');
+    
+    Route::middleware('can:manage-airports')->group(function () {
+        Route::get('/airports', [AirportController::class, 'index'])->name('airports.index');
+        Route::get('/airports/create', [AirportController::class, 'create'])->name('airports.create');
+        Route::post('/airports', [AirportController::class, 'store'])->name('airports.store');
+        Route::get('/airports/{airport}/edit', [AirportController::class, 'edit'])->name('airports.edit');
+        Route::patch('/airports/{airport}', [AirportController::class, 'update'])->name('airports.update');
+    });
 
-    Route::get('/airports', [AirportController::class, 'index'])->name('airports.index');
-    Route::get('/airports/create', [AirportController::class, 'create'])->name('airports.create');
-    Route::post('/airports', [AirportController::class, 'store'])->name('airports.store');
-    Route::get('/airports/{airport}/edit', [AirportController::class, 'edit'])->name('airports.edit');
-    Route::patch('/airports/{airport}', [AirportController::class, 'update'])->name('airports.update');
-
-    Route::middleware('can:is-master')->group(function () {
-    Route::get('/users', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index');
-    Route::get('/users/{user}/edit', [\App\Http\Controllers\UserController::class, 'edit'])->name('users.edit');
-    Route::patch('/users/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('users.update');
+    Route::middleware('can:manage-users')->group(function () {
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+        Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
     });
 });
 

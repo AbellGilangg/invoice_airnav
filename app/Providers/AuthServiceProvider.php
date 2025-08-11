@@ -40,7 +40,6 @@ class AuthServiceProvider extends ServiceProvider
         
         // Gate untuk membuat invoice (hanya Master dan Admin)
         Gate::define('create-invoice', function (User $user) {
-            // INI BAGIAN PENTINGNYA
             return in_array($user->role, ['master', 'admin']);
         });
 
