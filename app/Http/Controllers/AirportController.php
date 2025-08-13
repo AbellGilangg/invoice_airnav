@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Airport;
+use Illuminate\Http\Request;
 
 class AirportController extends Controller
 {
     public function index()
     {
-        $airports = Airport::orderBy('iata_code')->get();
-        return view('airports.index', ['airports' => $airports]);
+        $airports = Airport::all();
+        return view('airports.index', compact('airports'));
     }
 
     public function create()
@@ -20,36 +20,42 @@ class AirportController extends Controller
 
     public function store(Request $request)
     {
-        // Validasi sekarang mencakup iata_code dan icao_code
-        $validated = $request->validate([
-            'iata_code' => 'required|string|max:3|unique:airports,iata_code',
-            'icao_code' => 'required|string|max:4|unique:airports,icao_code',
+        // SESUAIKAN VALIDASI DENGAN FORM
+        $data = $request->validate([
+            'iata_code' => 'required|string|max:3|unique:airports',
+            'icao_code' => 'required|string|max:4|unique:airports',
             'name' => 'required|string|max:255',
             'op_start' => 'required|date_format:H:i',
             'op_end' => 'required|date_format:H:i',
         ]);
 
-        Airport::create($validated);
-
-        return redirect()->route('airports.index')->with('success', 'Bandara baru berhasil ditambahkan.');
+        Airport::create($data);
+        return redirect()->route('airports.index')->with('success', 'Data bandara berhasil ditambahkan.');
     }
 
     public function edit(Airport $airport)
     {
-        return view('airports.edit', ['airport' => $airport]);
+        return view('airports.edit', compact('airport'));
     }
 
     public function update(Request $request, Airport $airport)
     {
-        // Validasi untuk update tidak menyertakan kode, karena kode tidak boleh diubah
-        $validated = $request->validate([
+        // SESUAIKAN VALIDASI DENGAN FORM
+        $data = $request->validate([
+            'iata_code' => 'required|string|max:3|unique:airports,iata_code,' . $airport->id,
+            'icao_code' => 'required|string|max:4|unique:airports,icao_code,' . $airport->id,
             'name' => 'required|string|max:255',
             'op_start' => 'required|date_format:H:i',
             'op_end' => 'required|date_format:H:i',
         ]);
 
-        $airport->update($validated);
-
+        $airport->update($data);
         return redirect()->route('airports.index')->with('success', 'Data bandara berhasil diperbarui.');
+    }
+
+    public function destroy(Airport $airport)
+    {
+        $airport->delete();
+        return redirect()->route('airports.index')->with('success', 'Data bandara berhasil dihapus.');
     }
 }

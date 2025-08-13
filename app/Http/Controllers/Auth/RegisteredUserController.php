@@ -4,13 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Airport; // <-- TAMBAHKAN IMPORT
+use App\Models\Airport; // Baris ini bisa dihapus atau dibiarkan saja
 use Illuminate\Auth\Events\Registered;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
@@ -20,9 +18,9 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        // Ambil semua data bandara untuk ditampilkan di dropdown
-        $airports = Airport::orderBy('name')->get();
-        return view('auth.register', ['airports' => $airports]);
+        // KITA TIDAK PERLU MENGAMBIL DATA BANDARA LAGI
+        // $airports = Airport::all();
+        return view('auth.register'); // Hapus 'compact('airports')'
     }
 
     /**
@@ -30,29 +28,30 @@ class RegisteredUserController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
         $request->validate([
-            'username' => ['required', 'string', 'max:255', 'unique:'.User::class],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'role' => ['required', 'string', 'in:user,admin'], // Validasi role, master tidak bisa dipilih
-            'airport_id' => ['required', 'exists:airports,id'], // Validasi airport_id
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:255', 'unique:users'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+            'role' => ['required', 'in:admin,user'],
+            // 'airport_id' => ['required', 'exists:airports,id'], // HAPUS VALIDASI INI
         ]);
 
         $user = User::create([
-            'name' => $request->username,
+            'name' => $request->name,
             'username' => $request->username,
             'email' => $request->email,
-            'role' => $request->role,
-            'airport_id' => $request->airport_id, // Simpan airport_id
             'password' => Hash::make($request->password),
+            'role' => $request->role,
+            // 'airport_id' => $request->airport_id, // HAPUS ISIAN INI
         ]);
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        return redirect(route('dashboard', [], false));
     }
 }

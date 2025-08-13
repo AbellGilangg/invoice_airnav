@@ -5,18 +5,16 @@
         </h2>
     </x-slot>
 
-     <div class="py-12">
+    <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     <div class="flex justify-between items-center">
                         <p>{{ __("Selamat Datang") }}</p>
                         
-                         @if(in_array(auth()->user()->role, ['master', 'admin']))
-                            <a href="{{ route('invoices.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                Buat Invoice Baru
-                            </a>
-                        @endif
+                        <a href="{{ route('invoices.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Buat Invoice Baru
+                        </a>
                     </div>
                 </div>
             </div>
@@ -68,7 +66,7 @@
                             <a href="{{ route('dashboard') }}" class="ml-2 inline-flex items-center px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md font-semibold text-xs text-gray-700 dark:text-gray-200 uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-gray-500">
                                 Reset
                             </a>
-                            <a href="{{ route('invoices.export.excel', request()->query()) }}" class="ml-2 inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-500">
+                            <a href="#" class="ml-2 inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-500">
                                 Ekspor ke Excel
                             </a>
                         </div>
@@ -93,30 +91,19 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $invoice->flight_number }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">{{ number_format($invoice->total_charge, 2) }} {{ $invoice->currency }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                            {{-- Badge untuk status --}}
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $invoice->status == 'Lunas' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
                                                 {{ $invoice->status }}
                                             </span>
                                         </td>
-                                        {{-- Bagian Aksi Baru dengan Pengecekan Role --}}
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                            <div class="flex items-center gap-4">
-                                                <a href="{{ route('invoices.show', $invoice->id) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900">Detail</a>
-                                                
-                                                {{-- Tombol Edit & Dropdown Status hanya muncul jika user berhak --}}
-                                                @can('update-invoice', $invoice)
-                                                    <a href="{{ route('invoices.edit', $invoice->id) }}" class="text-green-600 dark:text-green-400 hover:text-green-900">Edit</a>
-                                                    
-                                                    <form action="{{ route('invoices.updateStatus', $invoice->id) }}" method="POST">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <select name="status" onchange="this.form.submit()" class="text-xs rounded-md ...">
-                                                            <option value="Belum Lunas" {{ $invoice->status == 'Belum Lunas' ? 'selected' : '' }}>Belum Lunas</option>
-                                                            <option value="Lunas" {{ $invoice->status == 'Lunas' ? 'selected' : '' }}>Lunas</option>
-                                                        </select>
-                                                    </form>
-                                                @endcan
-                                            </div>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <a href="{{ route('invoices.show', $invoice->id) }}" class="text-indigo-600 hover:text-indigo-900">Detail</a>
+                                            <a href="{{ route('invoices.edit', $invoice->id) }}" class="ml-4 text-green-600 hover:text-green-900">Edit</a>
+                                            
+                                            <form class="inline-block ml-4" action="{{ route('invoices.destroy', $invoice->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus invoice ini?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-600 hover:text-red-900">Hapus</button>
+                                            </form>
                                         </td>
                                     </tr>
                                 @empty

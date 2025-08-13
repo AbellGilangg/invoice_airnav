@@ -3,55 +3,41 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Airport;
 use Illuminate\Http\Request;
-use App\Models\Airport; // Tambahkan ini
-
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    // Middleware bisa ditambahkan di sini juga
-    // public function __construct()
-    // {
-    //     $this->middleware('can:manage-users');
-    // }
-
-    /**
-     * Menampilkan daftar semua user.
-     */
     public function index()
     {
-        // Ambil semua user kecuali master itu sendiri, urutkan berdasarkan nama
-        $users = User::where('role', '!=', 'master')->with('airport')->orderBy('name')->get();
+        $users = User::with('airport')->get();
         return view('users.index', compact('users'));
     }
 
-    /**
-     * Menampilkan form untuk mengedit role user.
-     */
     public function edit(User $user)
     {
-        // Master tidak bisa mengedit dirinya sendiri
-        if ($user->role === 'master') {
-            abort(403, 'Akun master tidak dapat diubah.');
-        }
-
-        $airports = Airport::orderBy('name')->get();
-
+        $airports = Airport::all();
         return view('users.edit', compact('user', 'airports'));
     }
 
-    /**
-     * Mengupdate role user.
-     */
     public function update(Request $request, User $user)
     {
-        $validated = $request->validate([
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users,username,' . $user->id,
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'role' => 'required|in:admin,user',
-            'airport_id' => 'required|exists:airports,id', // Validasi airport
+            'airport_id' => 'nullable|exists:airports,id',
         ]);
 
-        $user->update($validated);
+        $user->update($request->all());
+        return redirect()->route('users.index')->with('success', 'User updated successfully.');
+    }
 
-        return redirect()->route('users.index')->with('success', 'Role dan bandara akun berhasil diperbarui.');
+    public function destroy(User $user)
+    {
+        $user->delete();
+        return redirect()->route('users.index')->with('success', 'User deleted successfully.');
     }
 }
